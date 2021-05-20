@@ -1,8 +1,8 @@
 name: check
 
 on:
-  push: {}
-  pull_request: {}
+  push: { }
+  pull_request: { }
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.after }}
@@ -56,3 +56,11 @@ jobs:
           SHELLCHECK_OPTS: -e SC2236,SC2162,SC2268
         with:
           ignore: tests
+
+  markdown-link-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-verbose-mode: 'yes'
