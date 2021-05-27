@@ -24,7 +24,7 @@ func (e *ecsImpl) AllocateEipAddress(bandwidth int, chargeType types.InternetCha
 		err     error
 	)
 	var eni *ecs.NetworkInterfaceSet
-	eni, err = e.WaitForNetworkInterface(eniID, "", eniOpBackoff)
+	eni, err = e.WaitForNetworkInterface(eniID, "", ENIOpBackoff)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func (e *ecsImpl) AllocateEipAddress(bandwidth int, chargeType types.InternetCha
 // 3. if eip is not bind ,return code is IncorrectEipStatus
 func (e *ecsImpl) UnassociateEipAddress(eipID, eniID, eniIP string) error {
 	var innerErr error
-	err := wait.ExponentialBackoff(eniOpBackoff,
+	err := wait.ExponentialBackoff(ENIOpBackoff,
 		func() (done bool, err error) {
 			// we check eip binding is not changed
 			var eips []vpc.EipAddress

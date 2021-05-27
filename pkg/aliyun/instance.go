@@ -113,7 +113,7 @@ func UpdateFromAPI(client *ecs.Client, instanceType string) error {
 	}
 	var innerErr error
 	var resp *ecs.DescribeInstanceTypesResponse
-	err := wait.ExponentialBackoff(eniOpBackoff,
+	err := wait.ExponentialBackoff(ENIOpBackoff,
 		func() (done bool, err error) {
 			start := time.Now()
 			resp, innerErr = client.DescribeInstanceTypes(req)

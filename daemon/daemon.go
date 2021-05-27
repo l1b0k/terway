@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/AliyunContainerService/terway/pkg/aliyun"
+	config2 "github.com/AliyunContainerService/terway/pkg/config"
 	terwayIP "github.com/AliyunContainerService/terway/pkg/ip"
 	"github.com/AliyunContainerService/terway/pkg/link"
 	"github.com/AliyunContainerService/terway/pkg/metric"
@@ -1039,25 +1040,14 @@ func newNetworkService(configFilePath, kubeconfig, master, daemonMode string) (r
 		return nil, errors.Wrapf(err, "error init k8s service")
 	}
 
-	// load default config
-	f, err := os.Open(configFilePath)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed open config file")
-	}
-
-	data, err := ioutil.ReadAll(f)
-	if err != nil {
-		return nil, fmt.Errorf("failed read file %s: %v", configFilePath, err)
-	}
-
 	// load dynamic config
-	dynamicCfg, nodeLabel, err := getDynamicConfig(netSrv.k8s)
+	dynamicCfg, nodeLabel, err := GetDynamicConfig(netSrv.k8s)
 	if err != nil {
 		log.Warnf("get dynamic config error: %s. fallback to default config", err.Error())
 		dynamicCfg = ""
 	}
 
-	config, err := mergeConfigAndUnmarshal([]byte(dynamicCfg), data)
+	config, err := config2.GetConfigFromFileWithMerge(configFilePath, []byte(dynamicCfg))
 	if err != nil {
 		return nil, fmt.Errorf("failed parse config: %v", err)
 	}
@@ -1083,7 +1073,7 @@ func newNetworkService(configFilePath, kubeconfig, master, daemonMode string) (r
 		ignoreLinkNotExist = true
 	}
 	ipFamily := types.NewIPFamilyFromIPStack(types.IPStack(config.IPStack))
-	ecs, err := aliyun.NewECS(config.AccessID, config.AccessSecret, config.CredentialPath, ignoreLinkNotExist, ins, ipFamily)
+	ecs, err := aliyun.NewECS(config.AccessID, config.AccessSecret, config.CredentialPath, ignoreLinkNotExist, ins.VPCID, ins.RegionID, ipFamily)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error get aliyun client")
 	}
@@ -1273,7 +1263,7 @@ func restoreLocalENIRes(ecs aliyun.ECS, pc *types.PoolConfig, k8s Kubernetes, re
 }
 
 //setup default value
-func setDefault(cfg *types.Configure) error {
+func setDefault(cfg *config2.Configure) error {
 	if cfg.EniCapRatio == 0 {
 		cfg.EniCapRatio = 1
 	}
@@ -1297,7 +1287,7 @@ func setDefault(cfg *types.Configure) error {
 	return nil
 }
 
-func validateConfig(cfg *types.Configure) error {
+func validateConfig(cfg *config2.Configure) error {
 	switch cfg.IPStack {
 	case "", string(types.IPStackIPv4), string(types.IPStackDual):
 	default:
@@ -1307,7 +1297,7 @@ func validateConfig(cfg *types.Configure) error {
 	return nil
 }
 
-func getPoolConfig(cfg *types.Configure, ecs aliyun.ECS) (*types.PoolConfig, error) {
+func getPoolConfig(cfg *config2.Configure, ecs aliyun.ECS) (*types.PoolConfig, error) {
 	poolConfig := &types.PoolConfig{
 		MaxPoolSize:            cfg.MaxPoolSize,
 		MinPoolSize:            cfg.MinPoolSize,
