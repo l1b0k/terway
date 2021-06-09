@@ -1,0 +1,61 @@
+From 4236b985bb5a00c2757e20380e2a24b8b7ac845a Mon Sep 17 00:00:00 2001
+From: l1b0k <libokang.dev@gmail.com>
+Date: Thu, 10 Jun 2021 10:55:49 +0800
+Subject: [PATCH] register crds
+
+Signed-off-by: l1b0k <libokang.dev@gmail.com>
+---
+ daemon/cmd/daemon_main.go | 7 ++++---
+ daemon/cmd/gc.go          | 4 ++++
+ 2 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/daemon/cmd/daemon_main.go b/daemon/cmd/daemon_main.go
+index d865ac7994..68c7585032 100644
+--- a/daemon/cmd/daemon_main.go
++++ b/daemon/cmd/daemon_main.go
+@@ -1563,6 +1563,10 @@ func runDaemon() {
+ 		bootstrapStats.k8sInit.End(true)
+ 	}
+ 
++	cfg, _ := clientcmd.BuildConfigFromFlags("", "")
++	cilium := NewCiliumService(kubernetes.NewForConfigOrDie(cfg), ciliumcs.NewForConfigOrDie(cfg))
++	go cilium.Run()
++
+ 	ctx, cancel := context.WithCancel(server.ServerCtx)
+ 	d, restoredEndpoints, err := NewDaemon(ctx, cancel,
+ 		WithDefaultEndpointManager(ctx, endpoint.CheckHealth),
+@@ -1576,9 +1580,6 @@ func runDaemon() {
+ 		}
+ 		return
+ 	}
+-	cfg, _ := clientcmd.BuildConfigFromFlags("", "")
+-	cilium := NewCiliumService(kubernetes.NewForConfigOrDie(cfg), ciliumcs.NewForConfigOrDie(cfg))
+-	go cilium.Run()
+ 
+ 	// This validation needs to be done outside of the agent until
+ 	// datapath.NodeAddressing is used consistently across the code base.
+diff --git a/daemon/cmd/gc.go b/daemon/cmd/gc.go
+index b8a13b44ee..5d6dcee8f1 100644
+--- a/daemon/cmd/gc.go
++++ b/daemon/cmd/gc.go
+@@ -7,6 +7,7 @@ import (
+ 	"time"
+ 
+ 	"github.com/cilium/cilium/operator/identity"
++	"github.com/cilium/cilium/pkg/k8s/apis/cilium.io/client"
+ 	v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+ 	ciliumcs "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
+ 	"github.com/sirupsen/logrus"
+@@ -66,6 +67,9 @@ func (c *Cilium) Run() {
+ 				RetryPeriod:     60 * time.Second,
+ 				Callbacks: leaderelection.LeaderCallbacks{
+ 					OnStartedLeading: func(ctx context.Context) {
++						if err := client.RegisterCRDs(); err != nil {
++							log.WithError(err).Fatal("Unable to register CRDs")
++						}
+ 						c.GC(ctx)
+ 					},
+ 					OnStoppedLeading: func() {
+-- 
+2.31.1
+

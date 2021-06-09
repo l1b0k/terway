@@ -1,0 +1,44 @@
+From 9da2f8b8627fa8db562b3f3c5358cfc8bce9d1bf Mon Sep 17 00:00:00 2001
+From: l1b0k <libokang.dev@gmail.com>
+Date: Thu, 10 Jun 2021 19:20:58 +0800
+Subject: [PATCH] adapt 1.10 for terway
+
+Signed-off-by: l1b0k <libokang.dev@gmail.com>
+---
+ pkg/option/config.go | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/pkg/option/config.go b/pkg/option/config.go
+index 1ab2607c2d..01f62d6e39 100644
+--- a/pkg/option/config.go
++++ b/pkg/option/config.go
+@@ -2674,16 +2674,16 @@ func (c *DaemonConfig) Populate() {
+ 		}
+ 	}
+ 
+-	switch c.IPAM {
+-	case ipamOption.IPAMKubernetes, ipamOption.IPAMClusterPool:
+-		if c.EnableIPv4 {
+-			c.K8sRequireIPv4PodCIDR = true
+-		}
+-
+-		if c.EnableIPv6 {
+-			c.K8sRequireIPv6PodCIDR = true
+-		}
+-	}
++	//switch c.IPAM {
++	//case ipamOption.IPAMKubernetes, ipamOption.IPAMClusterPool:
++	//	if c.EnableIPv4 {
++	//		c.K8sRequireIPv4PodCIDR = true
++	//	}
++	//
++	//	if c.EnableIPv6 {
++	//		c.K8sRequireIPv6PodCIDR = true
++	//	}
++	//}
+ 
+ 	c.KubeProxyReplacementHealthzBindAddr = viper.GetString(KubeProxyReplacementHealthzBindAddr)
+ 
+-- 
+2.31.1
+
