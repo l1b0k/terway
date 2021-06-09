@@ -1,0 +1,58 @@
+From d32ea1833669c7e6da819a01a85b8a3bbcad1116 Mon Sep 17 00:00:00 2001
+From: l1b0k <libokang.dev@gmail.com>
+Date: Thu, 10 Jun 2021 19:20:58 +0800
+Subject: [PATCH] adapt 1.10 for terway
+
+Signed-off-by: l1b0k <libokang.dev@gmail.com>
+---
+ daemon/cmd/endpoint.go |  2 +-
+ pkg/option/config.go   | 20 ++++++++++----------
+ 2 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/daemon/cmd/endpoint.go b/daemon/cmd/endpoint.go
+index c43c2836d6..99e393eb84 100644
+--- a/daemon/cmd/endpoint.go
++++ b/daemon/cmd/endpoint.go
+@@ -317,7 +317,7 @@ func (d *Daemon) createEndpoint(ctx context.Context, owner regeneration.Owner, e
+ 		epTemplate.DatapathConfiguration.RequireRouting = &disabled
+ 	} else {
+ 		epTemplate.DatapathConfiguration.InstallEndpointRoute = false
+-		epTemplate.DatapathConfiguration.RequireEgressProg = false
++		epTemplate.DatapathConfiguration.RequireEgressProg = true
+ 		epTemplate.DatapathConfiguration.RequireRouting = nil
+ 	}
+ 
+diff --git a/pkg/option/config.go b/pkg/option/config.go
+index 1ab2607c2d..01f62d6e39 100644
+--- a/pkg/option/config.go
++++ b/pkg/option/config.go
+@@ -2674,16 +2674,16 @@ func (c *DaemonConfig) Populate() {
+ 		}
+ 	}
+ 
+-	switch c.IPAM {
+-	case ipamOption.IPAMKubernetes, ipamOption.IPAMClusterPool:
+-		if c.EnableIPv4 {
+-			c.K8sRequireIPv4PodCIDR = true
+-		}
+-
+-		if c.EnableIPv6 {
+-			c.K8sRequireIPv6PodCIDR = true
+-		}
+-	}
++	//switch c.IPAM {
++	//case ipamOption.IPAMKubernetes, ipamOption.IPAMClusterPool:
++	//	if c.EnableIPv4 {
++	//		c.K8sRequireIPv4PodCIDR = true
++	//	}
++	//
++	//	if c.EnableIPv6 {
++	//		c.K8sRequireIPv6PodCIDR = true
++	//	}
++	//}
+ 
+ 	c.KubeProxyReplacementHealthzBindAddr = viper.GetString(KubeProxyReplacementHealthzBindAddr)
+ 
+-- 
+2.31.1
+
