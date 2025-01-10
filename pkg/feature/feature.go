@@ -14,8 +14,11 @@ func init() {
 const (
 	// AutoDataPathV2 enable the new datapath feature.
 	AutoDataPathV2 featuregate.Feature = "AutoDataPathV2"
+
+	KubeProxyReplacement featuregate.Feature = "KubeProxyReplacement"
 )
 
 var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	AutoDataPathV2: {Default: true, PreRelease: featuregate.Alpha},
+	AutoDataPathV2:       {Default: true, PreRelease: featuregate.Alpha},
+	KubeProxyReplacement: {Default: true, PreRelease: featuregate.Alpha},
 }

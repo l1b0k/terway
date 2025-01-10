@@ -27,6 +27,7 @@ type PolicyConfig struct {
 	IPv6                 bool
 	InClusterLoadBalance bool
 	HasCiliumChainer     bool
+	EnableKPR            bool
 }
 
 type CNIConfig struct {
@@ -76,6 +77,7 @@ func getPolicyConfig(capFilePath string) (*PolicyConfig, error) {
 	cfg.Datapath = store.Get(nodecap.NodeCapabilityDataPath)
 	cfg.PolicyProvider = store.Get(nodecap.NodeCapabilityNetworkPolicyProvider)
 	cfg.HasCiliumChainer = store.Get(nodecap.NodeCapabilityHasCiliumChainer) == True
+	cfg.EnableKPR = store.Get(nodecap.NodeCapabilityKubeProxyReplacement) == True
 
 	cfg.HealthCheckPort = os.Getenv("FELIX_HEALTHPORT")
 	if cfg.HealthCheckPort == "" {
@@ -209,6 +211,12 @@ func runCilium(cfg *PolicyConfig) error {
 		"--enable-bandwidth-manager=true",
 		"--agent-health-port=" + cfg.HealthCheckPort,
 	}
+	if cfg.IPv6 {
+		args = append(args, "--enable-ipv6=true")
+	} else {
+		args = append(args, "--enable-ipv6=false")
+	}
+
 	if cfg.EnableNetworkPolicy {
 		args = append(args, "--enable-policy=default")
 	} else {
@@ -221,6 +229,11 @@ func runCilium(cfg *PolicyConfig) error {
 		args = append(args, "--datapath-mode=ipvlan")
 	case dataPathV2:
 		args = append(args, "--datapath-mode=veth")
+
+		if cfg.EnableKPR {
+			args = append(args, "--enable-node-port=true")
+		}
+
 	default:
 		args = append(args, "--kube-proxy-replacement=disabled")
 	}

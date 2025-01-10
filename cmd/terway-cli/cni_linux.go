@@ -63,3 +63,18 @@ func allowEBPFNetworkPolicy(require bool) (bool, error) {
 func checkKernelVersion(k, major, minor int) bool {
 	return kernel.CheckKernelVersion(k, major, minor)
 }
+
+func enableKPR() bool {
+	if !utilfeature.DefaultFeatureGate.Enabled(terwayfeature.KubeProxyReplacement) {
+		return false
+	}
+
+	prev := nodecap.GetNodeCapabilities(nodecap.NodeCapabilityKubeProxyReplacement)
+	if prev == True {
+		fmt.Println("kpr enabled")
+		return true
+	}
+
+	_, err := netlink.LinkByName("cilium_net")
+	return errors.As(err, &netlink.LinkNotFoundError{})
+}
