@@ -3,12 +3,12 @@ module github.com/AliyunContainerService/terway
 go 1.24.0
 
 require (
-	github.com/AliyunContainerService/ack-ram-tool/pkg/credentials/provider v0.16.1
+	github.com/AliyunContainerService/ack-ram-tool/pkg/credentials/provider v0.18.1
 	github.com/Jeffail/gabs/v2 v2.7.0
 	github.com/Microsoft/go-winio v0.6.0
 	github.com/Microsoft/hcsshim v0.9.9
 	github.com/alexflint/go-filemutex v1.2.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.63.88
+	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/boltdb/bolt v1.3.1
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.3.0
@@ -34,7 +34,7 @@ require (
 	go.uber.org/atomic v1.11.0
 	go.uber.org/automaxprocs v1.6.0
 	golang.org/x/mod v0.21.0
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	golang.org/x/sync v0.12.0
 	golang.org/x/sys v0.31.0
 	golang.org/x/time v0.7.0
@@ -62,6 +62,10 @@ require (
 	atomicgo.dev/cursor v0.1.1 // indirect
 	atomicgo.dev/keyboard v0.2.9 // indirect
 	atomicgo.dev/schedule v0.0.2 // indirect
+	github.com/AliyunContainerService/ack-ram-tool/pkg/ecsmetadata v0.0.7 // indirect
+	github.com/alibabacloud-go/debug v1.0.1 // indirect
+	github.com/alibabacloud-go/tea v1.2.2 // indirect
+	github.com/aliyun/credentials-go v1.4.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -115,6 +119,7 @@ require (
 	github.com/safchain/ethtool v0.3.0 // indirect
 	github.com/segmentio/go-camelcase v0.0.0-20160726192923-7085f1e3c734 // indirect
 	github.com/segmentio/go-snakecase v1.2.0 // indirect
+	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect

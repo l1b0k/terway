@@ -45,6 +45,7 @@ const (
 	LENIStatusAvailable    string = "Available"
 	LENIStatusUnattached   string = "Unattached"
 	LENIStatusExecuting    string = "Executing"
+	LENIStatusAttaching    string = "Attaching"
 	LENIStatusCreateFailed string = "Create Failed"
 	LENIStatusAttachFailed string = "Attach Failed"
 	LENIStatusDeleteFailed string = "Delete Failed"

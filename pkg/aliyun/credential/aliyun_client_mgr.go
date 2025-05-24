@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/AliyunContainerService/ack-ram-tool/pkg/credentials/provider"
+	"github.com/AliyunContainerService/terway/pkg/aliyun/client/eflo"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/eflo"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
