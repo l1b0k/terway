@@ -18,8 +18,8 @@ limitations under the License.
 package versioned
 
 import (
-	"fmt"
-	"net/http"
+	fmt "fmt"
+	http "net/http"
 
 	networkv1beta1 "github.com/AliyunContainerService/terway/pkg/generated/clientset/versioned/typed/network.alibabacloud.com/v1beta1"
 	discovery "k8s.io/client-go/discovery"
@@ -32,8 +32,7 @@ type Interface interface {
 	NetworkV1beta1() networkv1beta1.NetworkV1beta1Interface
 }
 
-// Clientset contains the clients for groups. Each group has exactly one
-// version included in a Clientset.
+// Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
 	networkV1beta1 *networkv1beta1.NetworkV1beta1Client

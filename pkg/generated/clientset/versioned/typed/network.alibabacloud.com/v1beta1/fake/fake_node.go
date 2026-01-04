@@ -18,115 +18,30 @@ limitations under the License.
 package fake
 
 import (
-	"context"
-
 	v1beta1 "github.com/AliyunContainerService/terway/pkg/apis/network.alibabacloud.com/v1beta1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	networkalibabacloudcomv1beta1 "github.com/AliyunContainerService/terway/pkg/generated/clientset/versioned/typed/network.alibabacloud.com/v1beta1"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakeNodes implements NodeInterface
-type FakeNodes struct {
+// fakeNodes implements NodeInterface
+type fakeNodes struct {
+	*gentype.FakeClientWithList[*v1beta1.Node, *v1beta1.NodeList]
 	Fake *FakeNetworkV1beta1
 }
 
-var nodesResource = schema.GroupVersionResource{Group: "network.alibabacloud.com", Version: "v1beta1", Resource: "nodes"}
-
-var nodesKind = schema.GroupVersionKind{Group: "network.alibabacloud.com", Version: "v1beta1", Kind: "Node"}
-
-// Get takes name of the node, and returns the corresponding node object, and an error if there is any.
-func (c *FakeNodes) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Node, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootGetAction(nodesResource, name), &v1beta1.Node{})
-	if obj == nil {
-		return nil, err
+func newFakeNodes(fake *FakeNetworkV1beta1) networkalibabacloudcomv1beta1.NodeInterface {
+	return &fakeNodes{
+		gentype.NewFakeClientWithList[*v1beta1.Node, *v1beta1.NodeList](
+			fake.Fake,
+			"",
+			v1beta1.SchemeGroupVersion.WithResource("nodes"),
+			v1beta1.SchemeGroupVersion.WithKind("Node"),
+			func() *v1beta1.Node { return &v1beta1.Node{} },
+			func() *v1beta1.NodeList { return &v1beta1.NodeList{} },
+			func(dst, src *v1beta1.NodeList) { dst.ListMeta = src.ListMeta },
+			func(list *v1beta1.NodeList) []*v1beta1.Node { return gentype.ToPointerSlice(list.Items) },
+			func(list *v1beta1.NodeList, items []*v1beta1.Node) { list.Items = gentype.FromPointerSlice(items) },
+		),
+		fake,
 	}
-	return obj.(*v1beta1.Node), err
-}
-
-// List takes label and field selectors, and returns the list of Nodes that match those selectors.
-func (c *FakeNodes) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.NodeList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootListAction(nodesResource, nodesKind, opts), &v1beta1.NodeList{})
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1beta1.NodeList{ListMeta: obj.(*v1beta1.NodeList).ListMeta}
-	for _, item := range obj.(*v1beta1.NodeList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested nodes.
-func (c *FakeNodes) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewRootWatchAction(nodesResource, opts))
-}
-
-// Create takes the representation of a node and creates it.  Returns the server's representation of the node, and an error, if there is any.
-func (c *FakeNodes) Create(ctx context.Context, node *v1beta1.Node, opts v1.CreateOptions) (result *v1beta1.Node, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootCreateAction(nodesResource, node), &v1beta1.Node{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta1.Node), err
-}
-
-// Update takes the representation of a node and updates it. Returns the server's representation of the node, and an error, if there is any.
-func (c *FakeNodes) Update(ctx context.Context, node *v1beta1.Node, opts v1.UpdateOptions) (result *v1beta1.Node, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateAction(nodesResource, node), &v1beta1.Node{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta1.Node), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeNodes) UpdateStatus(ctx context.Context, node *v1beta1.Node, opts v1.UpdateOptions) (*v1beta1.Node, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateSubresourceAction(nodesResource, "status", node), &v1beta1.Node{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta1.Node), err
-}
-
-// Delete takes name of the node and deletes it. Returns an error if one occurs.
-func (c *FakeNodes) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteActionWithOptions(nodesResource, name, opts), &v1beta1.Node{})
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeNodes) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewRootDeleteCollectionAction(nodesResource, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1beta1.NodeList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched node.
-func (c *FakeNodes) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.Node, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewRootPatchSubresourceAction(nodesResource, name, pt, data, subresources...), &v1beta1.Node{})
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta1.Node), err
 }

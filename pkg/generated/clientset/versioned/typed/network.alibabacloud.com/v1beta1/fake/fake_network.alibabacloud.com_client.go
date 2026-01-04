@@ -28,23 +28,23 @@ type FakeNetworkV1beta1 struct {
 }
 
 func (c *FakeNetworkV1beta1) NetworkInterfaces() v1beta1.NetworkInterfaceInterface {
-	return &FakeNetworkInterfaces{c}
+	return newFakeNetworkInterfaces(c)
 }
 
 func (c *FakeNetworkV1beta1) Nodes() v1beta1.NodeInterface {
-	return &FakeNodes{c}
+	return newFakeNodes(c)
 }
 
 func (c *FakeNetworkV1beta1) NodeRuntimes() v1beta1.NodeRuntimeInterface {
-	return &FakeNodeRuntimes{c}
+	return newFakeNodeRuntimes(c)
 }
 
 func (c *FakeNetworkV1beta1) PodENIs(namespace string) v1beta1.PodENIInterface {
-	return &FakePodENIs{c, namespace}
+	return newFakePodENIs(c, namespace)
 }
 
 func (c *FakeNetworkV1beta1) PodNetworkings() v1beta1.PodNetworkingInterface {
-	return &FakePodNetworkings{c}
+	return newFakePodNetworkings(c)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

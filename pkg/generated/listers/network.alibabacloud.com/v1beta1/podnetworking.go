@@ -18,10 +18,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	v1beta1 "github.com/AliyunContainerService/terway/pkg/apis/network.alibabacloud.com/v1beta1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	networkalibabacloudcomv1beta1 "github.com/AliyunContainerService/terway/pkg/apis/network.alibabacloud.com/v1beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // PodNetworkingLister helps list PodNetworkings.
@@ -29,39 +29,19 @@ import (
 type PodNetworkingLister interface {
 	// List lists all PodNetworkings in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.PodNetworking, err error)
+	List(selector labels.Selector) (ret []*networkalibabacloudcomv1beta1.PodNetworking, err error)
 	// Get retrieves the PodNetworking from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1beta1.PodNetworking, error)
+	Get(name string) (*networkalibabacloudcomv1beta1.PodNetworking, error)
 	PodNetworkingListerExpansion
 }
 
 // podNetworkingLister implements the PodNetworkingLister interface.
 type podNetworkingLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*networkalibabacloudcomv1beta1.PodNetworking]
 }
 
 // NewPodNetworkingLister returns a new PodNetworkingLister.
 func NewPodNetworkingLister(indexer cache.Indexer) PodNetworkingLister {
-	return &podNetworkingLister{indexer: indexer}
-}
-
-// List lists all PodNetworkings in the indexer.
-func (s *podNetworkingLister) List(selector labels.Selector) (ret []*v1beta1.PodNetworking, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.PodNetworking))
-	})
-	return ret, err
-}
-
-// Get retrieves the PodNetworking from the index for a given name.
-func (s *podNetworkingLister) Get(name string) (*v1beta1.PodNetworking, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1beta1.Resource("podnetworking"), name)
-	}
-	return obj.(*v1beta1.PodNetworking), nil
+	return &podNetworkingLister{listers.New[*networkalibabacloudcomv1beta1.PodNetworking](indexer, networkalibabacloudcomv1beta1.Resource("podnetworking"))}
 }

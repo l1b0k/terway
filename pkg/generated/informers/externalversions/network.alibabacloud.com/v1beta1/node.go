@@ -18,13 +18,13 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	networkalibabacloudcomv1beta1 "github.com/AliyunContainerService/terway/pkg/apis/network.alibabacloud.com/v1beta1"
+	apisnetworkalibabacloudcomv1beta1 "github.com/AliyunContainerService/terway/pkg/apis/network.alibabacloud.com/v1beta1"
 	versioned "github.com/AliyunContainerService/terway/pkg/generated/clientset/versioned"
 	internalinterfaces "github.com/AliyunContainerService/terway/pkg/generated/informers/externalversions/internalinterfaces"
-	v1beta1 "github.com/AliyunContainerService/terway/pkg/generated/listers/network.alibabacloud.com/v1beta1"
+	networkalibabacloudcomv1beta1 "github.com/AliyunContainerService/terway/pkg/generated/listers/network.alibabacloud.com/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -35,7 +35,7 @@ import (
 // Nodes.
 type NodeInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1beta1.NodeLister
+	Lister() networkalibabacloudcomv1beta1.NodeLister
 }
 
 type nodeInformer struct {
@@ -55,21 +55,33 @@ func NewNodeInformer(client versioned.Interface, resyncPeriod time.Duration, ind
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredNodeInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.NetworkV1beta1().Nodes().List(context.TODO(), options)
+				return client.NetworkV1beta1().Nodes().List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.NetworkV1beta1().Nodes().Watch(context.TODO(), options)
+				return client.NetworkV1beta1().Nodes().Watch(context.Background(), options)
 			},
-		},
-		&networkalibabacloudcomv1beta1.Node{},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.NetworkV1beta1().Nodes().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.NetworkV1beta1().Nodes().Watch(ctx, options)
+			},
+		}, client),
+		&apisnetworkalibabacloudcomv1beta1.Node{},
 		resyncPeriod,
 		indexers,
 	)
@@ -80,9 +92,9 @@ func (f *nodeInformer) defaultInformer(client versioned.Interface, resyncPeriod 
 }
 
 func (f *nodeInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&networkalibabacloudcomv1beta1.Node{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisnetworkalibabacloudcomv1beta1.Node{}, f.defaultInformer)
 }
 
-func (f *nodeInformer) Lister() v1beta1.NodeLister {
-	return v1beta1.NewNodeLister(f.Informer().GetIndexer())
+func (f *nodeInformer) Lister() networkalibabacloudcomv1beta1.NodeLister {
+	return networkalibabacloudcomv1beta1.NewNodeLister(f.Informer().GetIndexer())
 }

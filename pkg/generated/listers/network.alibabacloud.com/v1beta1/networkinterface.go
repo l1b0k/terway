@@ -18,10 +18,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	v1beta1 "github.com/AliyunContainerService/terway/pkg/apis/network.alibabacloud.com/v1beta1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	networkalibabacloudcomv1beta1 "github.com/AliyunContainerService/terway/pkg/apis/network.alibabacloud.com/v1beta1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // NetworkInterfaceLister helps list NetworkInterfaces.
@@ -29,39 +29,19 @@ import (
 type NetworkInterfaceLister interface {
 	// List lists all NetworkInterfaces in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1beta1.NetworkInterface, err error)
+	List(selector labels.Selector) (ret []*networkalibabacloudcomv1beta1.NetworkInterface, err error)
 	// Get retrieves the NetworkInterface from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1beta1.NetworkInterface, error)
+	Get(name string) (*networkalibabacloudcomv1beta1.NetworkInterface, error)
 	NetworkInterfaceListerExpansion
 }
 
 // networkInterfaceLister implements the NetworkInterfaceLister interface.
 type networkInterfaceLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*networkalibabacloudcomv1beta1.NetworkInterface]
 }
 
 // NewNetworkInterfaceLister returns a new NetworkInterfaceLister.
 func NewNetworkInterfaceLister(indexer cache.Indexer) NetworkInterfaceLister {
-	return &networkInterfaceLister{indexer: indexer}
-}
-
-// List lists all NetworkInterfaces in the indexer.
-func (s *networkInterfaceLister) List(selector labels.Selector) (ret []*v1beta1.NetworkInterface, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1beta1.NetworkInterface))
-	})
-	return ret, err
-}
-
-// Get retrieves the NetworkInterface from the index for a given name.
-func (s *networkInterfaceLister) Get(name string) (*v1beta1.NetworkInterface, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1beta1.Resource("networkinterface"), name)
-	}
-	return obj.(*v1beta1.NetworkInterface), nil
+	return &networkInterfaceLister{listers.New[*networkalibabacloudcomv1beta1.NetworkInterface](indexer, networkalibabacloudcomv1beta1.Resource("networkinterface"))}
 }
