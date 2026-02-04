@@ -135,6 +135,18 @@ func TestParseAndValidateCredential(t *testing.T) {
 	}
 }
 
+func TestGetConfig_SetConfig(t *testing.T) {
+	orig := GetConfig()
+	defer func() { SetConfig(orig) }()
+
+	SetConfig(nil)
+	assert.Nil(t, GetConfig())
+
+	c := &Config{RegionID: "cn-test"}
+	SetConfig(c)
+	assert.Equal(t, c, GetConfig())
+}
+
 func TestIsControllerEnabled(t *testing.T) {
 	type args struct {
 		name        string

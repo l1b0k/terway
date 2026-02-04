@@ -815,6 +815,16 @@ func TestGetENIConfigWithTagFilter(t *testing.T) {
 	assert.Equal(t, map[string]string{"filter-key": "filter-value"}, eniConfig.TagFilter)
 }
 
+func TestGetDynamicConfig_NoLabel(t *testing.T) {
+	m := k8smocks.NewKubernetes(t)
+	m.On("GetNodeDynamicConfigLabel").Return("")
+	cfg, label, err := getDynamicConfig(context.Background(), m)
+	assert.Empty(t, cfg)
+	assert.Empty(t, label)
+	assert.Nil(t, err)
+	m.AssertNotCalled(t, "GetDynamicConfigWithName")
+}
+
 func TestDetDynamicConfig(t *testing.T) {
 	m := k8smocks.NewKubernetes(t)
 	m.On("GetDynamicConfigWithName", mock.Anything, mock.Anything).Return("", nil)
