@@ -138,7 +138,7 @@ func (c *Config) Populate() {
 
 func (c *Config) Validate() error {
 	switch c.IPStack {
-	case "", string(types.IPStackIPv4), string(types.IPStackDual):
+	case "", string(types.IPStackIPv4), string(types.IPStackDual), string(types.IPStackIPv6):
 	default:
 		return fmt.Errorf("unsupported ipStack %s in configMap", c.IPStack)
 	}

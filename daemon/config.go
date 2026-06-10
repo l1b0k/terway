@@ -129,6 +129,9 @@ func getPoolConfig(cfg *daemon.Config, daemonMode string, limit *client.Limits) 
 		}
 
 		ipPerENI := limit.IPv4PerAdapter
+		if cfg.IPStack == string(types.IPStackIPv6) {
+			ipPerENI = limit.IPv6PerAdapter
+		}
 		if utils.IsWindowsOS() {
 			// NB(thxCode): don't assign the primary IP of one assistant eni.
 			ipPerENI--
@@ -155,7 +158,7 @@ func getPoolConfig(cfg *daemon.Config, daemonMode string, limit *client.Limits) 
 		poolConfig.MaxIPPerENI = ipPerENI
 
 		if cfg.EnableERDMA {
-			poolConfig.ERdmaCapacity = limit.ERDMARes() * limit.IPv4PerAdapter
+			poolConfig.ERdmaCapacity = limit.ERDMARes() * ipPerENI
 		}
 	}
 

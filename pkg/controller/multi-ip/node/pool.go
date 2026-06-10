@@ -1451,7 +1451,7 @@ func assignEniPrefixWithOptions(ctx context.Context, node *networkv1beta1.Node, 
 	// - IPv4 ENI always has a primary IP which occupies 1 slot
 	// - So the effective prefix capacity is IPv4PerAdapter - 1
 	prefixCapForNewENI := node.Spec.NodeCap.IPv4PerAdapter - 1
-	if prefixCapForNewENI <= 0 {
+	if eniSpec.EnableIPv4 && prefixCapForNewENI <= 0 {
 		l.Info("IPv4PerAdapter too small for prefix delegation, skipping new ENI creation",
 			"ipv4PerAdapter", node.Spec.NodeCap.IPv4PerAdapter)
 		return
