@@ -76,6 +76,37 @@ func TestGetPoolConfigWithENIMultiIPMode(t *testing.T) {
 	assert.Equal(t, 5, poolConfig.MaxIPPerENI)
 }
 
+func TestGetPoolConfigWithENIMultiIPModeIPv6Stack(t *testing.T) {
+	instance.Init(&Mock{
+		regionID:     "regionID",
+		zoneID:       "zoneID",
+		vSwitchID:    "vsw",
+		instanceID:   "instanceID",
+		instanceType: "",
+	})
+	cfg := &daemon.Config{
+		MaxPoolSize: 100,
+		MinPoolSize: 1,
+		EniCapRatio: 1,
+		RegionID:    "foo",
+		IPStack:     "ipv6",
+		EnableERDMA: true,
+	}
+	limit := &client.Limits{
+		Adapters:           10,
+		IPv4PerAdapter:     5,
+		IPv6PerAdapter:     8,
+		MemberAdapterLimit: 5,
+		ERdmaAdapters:      2,
+	}
+	poolConfig, err := getPoolConfig(cfg, daemon.ModeENIMultiIP, limit)
+	assert.NoError(t, err)
+	// ipv6 single-stack capacity is derived from IPv6PerAdapter, not IPv4PerAdapter
+	assert.Equal(t, 8, poolConfig.MaxIPPerENI)
+	assert.Equal(t, 9*8, poolConfig.Capacity)
+	assert.Equal(t, limit.ERDMARes()*8, poolConfig.ERdmaCapacity)
+}
+
 // TestGetPoolConfigWithIPReclaimConfig tests getPoolConfig with valid IP reclaim configurations
 func TestGetPoolConfigWithIPReclaimConfig(t *testing.T) {
 	instance.Init(&Mock{

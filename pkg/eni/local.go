@@ -688,7 +688,11 @@ func (l *Local) factoryAllocWorker(ctx context.Context) {
 			}
 			v6Count := 0
 			if l.enableIPv6 {
-				v6Count = min(l.batchSize, max(l.allocatingV6.Len(), 1))
+				v6Count = min(l.batchSize, l.allocatingV6.Len())
+				if !l.enableIPv4 {
+					// ipv6-only eni must carry at least one ipv6
+					v6Count = min(l.batchSize, max(l.allocatingV6.Len(), 1))
+				}
 			}
 
 			l.status = statusCreating
