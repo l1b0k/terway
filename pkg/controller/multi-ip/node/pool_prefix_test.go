@@ -903,6 +903,33 @@ func TestAssignEniPrefixWithOptions_DualStackParity(t *testing.T) {
 	}
 }
 
+// TestAssignEniPrefixWithOptions_IPv6OnlyNotBlockedByIPv4Cap verifies that in IPv6-only
+// mode, a small IPv4PerAdapter must not block new ENI creation: the IPv4PerAdapter-1
+// capacity guard only applies when IPv4 is enabled.
+func TestAssignEniPrefixWithOptions_IPv6OnlyNotBlockedByIPv4Cap(t *testing.T) {
+	// IPv4PerAdapter = 1 would early-return in IPv4 mode (prefixCap = 0)
+	node := NewNodeFactory("test-node").
+		WithNodeCap(3, 1, 15).
+		WithIPv4(false).
+		WithIPv6(true).
+		WithIPv6PrefixCount(1).
+		WithDefaultSecondaryFlavor(3).
+		Build()
+
+	options := getEniOptions(node)
+	ctx := context.Background()
+	assignEniPrefixWithOptions(ctx, node, options, nil)
+
+	assignedV6 := 0
+	for _, opt := range options {
+		if opt.eniRef == nil {
+			assert.Equal(t, 0, opt.addIPv4PrefixN, "ipv6-only: no ipv4 prefix on new ENI")
+			assignedV6 += opt.addIPv6PrefixN
+		}
+	}
+	assert.Equal(t, 1, assignedV6, "ipv6-only: prefix demand must be assigned to a new ENI despite IPv4PerAdapter=1")
+}
+
 // TestIsPrefixMode tests the prefix mode detection logic.
 // Prefix mode is determined by the EnableIPPrefix field in the Node CR's ENISpec.
 func TestIsPrefixMode(t *testing.T) {

@@ -2679,12 +2679,12 @@ var _ = Describe("Test ReconcileNode", func() {
 			By("Creating completed task with same IPs but without PodID (simulating OpenAPI response)")
 			now := time.Now()
 			eniInfo := &aliyunClient.NetworkInterface{
-				NetworkInterfaceID: "eni-trunk-1",
-				Type:               string(networkv1beta1.ENITypeTrunk),
-				Status:             aliyunClient.ENIStatusInUse,
-				MacAddress:         "aa:bb:cc:dd:ee:01",
-				SecurityGroupIDs:   []string{"sg-1"},
-				PrivateIPAddress:   "10.149.35.182",
+				NetworkInterfaceID:          "eni-trunk-1",
+				Type:                        string(networkv1beta1.ENITypeTrunk),
+				Status:                      aliyunClient.ENIStatusInUse,
+				MacAddress:                  "aa:bb:cc:dd:ee:01",
+				SecurityGroupIDs:            []string{"sg-1"},
+				PrivateIPAddress:            "10.149.35.182",
 				NetworkInterfaceTrafficMode: "Standard",
 				PrivateIPSets: []aliyunClient.IPSet{
 					{IPAddress: "10.149.35.182", Primary: true},
@@ -3789,7 +3789,7 @@ var _ = Describe("Test ReconcileNode", func() {
 
 			reconciler := &ReconcileNode{}
 
-			result := reconciler.validateENI(ctx, option, []eniTypeKey{secondaryKey})
+			result := reconciler.validateENI(ctx, &networkv1beta1.Node{}, option, []eniTypeKey{secondaryKey})
 			Expect(result).To(BeFalse())
 		})
 
@@ -3824,7 +3824,7 @@ var _ = Describe("Test ReconcileNode", func() {
 				WithVSwitchPool(switchPool).
 				Build()
 
-			result := reconciler.validateENI(ctx, option, []eniTypeKey{secondaryKey})
+			result := reconciler.validateENI(ctx, &networkv1beta1.Node{}, option, []eniTypeKey{secondaryKey})
 			Expect(result).To(BeTrue())
 		})
 
@@ -3842,7 +3842,7 @@ var _ = Describe("Test ReconcileNode", func() {
 			reconciler := &ReconcileNode{}
 
 			// Try to validate with trunk type filter (should fail)
-			result := reconciler.validateENI(ctx, option, []eniTypeKey{trunkKey})
+			result := reconciler.validateENI(ctx, &networkv1beta1.Node{}, option, []eniTypeKey{trunkKey})
 			Expect(result).To(BeFalse())
 		})
 
@@ -3857,7 +3857,7 @@ var _ = Describe("Test ReconcileNode", func() {
 
 			reconciler := &ReconcileNode{}
 
-			result := reconciler.validateENI(ctx, option, []eniTypeKey{secondaryKey})
+			result := reconciler.validateENI(ctx, &networkv1beta1.Node{}, option, []eniTypeKey{secondaryKey})
 			Expect(result).To(BeTrue())
 		})
 
@@ -3892,8 +3892,45 @@ var _ = Describe("Test ReconcileNode", func() {
 				WithVSwitchPool(switchPool).
 				Build()
 
-			result := reconciler.validateENI(ctx, option, []eniTypeKey{secondaryKey})
+			result := reconciler.validateENI(ctx, &networkv1beta1.Node{}, option, []eniTypeKey{secondaryKey})
 			Expect(result).To(BeFalse())
+		})
+
+		It("Should validate an IPv6-only ENI when the vSwitch has no available IPv4 addresses", func() {
+			ctx := context.TODO()
+
+			mockHelper := NewMockAPIHelperWithT(GinkgoT())
+			openAPI, vpcClient, ecsClient = mockHelper.GetMocks()
+			mockHelper.SetupVSwitch("vsw-1", &vpc.VSwitch{
+				VSwitchId:               "vsw-1",
+				ZoneId:                  "zone-1",
+				AvailableIpAddressCount: 0,
+				CidrBlock:               "192.168.0.0/16",
+				Ipv6CidrBlock:           "fd00::/64",
+			})
+
+			eni := BuildENIWithCustomIPs("eni-1", aliyunClient.ENIStatusInUse, nil, nil)
+			eni.VSwitchID = "vsw-1"
+			eni.NetworkInterfaceType = networkv1beta1.ENITypeSecondary
+			eni.NetworkInterfaceTrafficMode = networkv1beta1.NetworkInterfaceTrafficModeStandard
+
+			option := &eniOptions{
+				eniRef:     eni,
+				eniTypeKey: secondaryKey,
+			}
+			node := &networkv1beta1.Node{
+				Spec: networkv1beta1.NodeSpec{
+					ENISpec: &networkv1beta1.ENISpec{EnableIPv6: true},
+				},
+			}
+
+			reconciler := NewReconcilerBuilder().
+				WithAliyun(openAPI).
+				WithVSwitchPool(switchPool).
+				Build()
+
+			result := reconciler.validateENI(ctx, node, option, []eniTypeKey{secondaryKey})
+			Expect(result).To(BeTrue())
 		})
 
 		It("Should not validate an ENI with unavailable vSwitch information", func() {
@@ -3925,7 +3962,7 @@ var _ = Describe("Test ReconcileNode", func() {
 				WithVSwitchPool(vsw).
 				Build()
 
-			result := reconciler.validateENI(ctx, option, []eniTypeKey{secondaryKey})
+			result := reconciler.validateENI(ctx, &networkv1beta1.Node{}, option, []eniTypeKey{secondaryKey})
 			Expect(result).To(BeFalse())
 		})
 	})

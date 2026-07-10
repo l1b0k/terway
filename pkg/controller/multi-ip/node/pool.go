@@ -1162,10 +1162,10 @@ func (n *ReconcileNode) addIP(ctx context.Context, unSucceedPods map[string]*Pod
 
 	// handle trunk/secondary eni
 	assignEniWithOptions(ctx, node, allocationDemand, options, n.eniTaskQueue, func(option *eniOptions) bool {
-		return n.validateENI(ctx, option, []eniTypeKey{secondaryKey, trunkKey})
+		return n.validateENI(ctx, node, option, []eniTypeKey{secondaryKey, trunkKey})
 	})
 	assignEniWithOptions(ctx, node, len(allocatableRDMAPods), options, n.eniTaskQueue, func(option *eniOptions) bool {
-		return n.validateENI(ctx, option, []eniTypeKey{rdmaKey})
+		return n.validateENI(ctx, node, option, []eniTypeKey{rdmaKey})
 	})
 
 	err := n.allocateFromOptions(ctx, node, options)
@@ -1323,7 +1323,7 @@ func updateNodeCondition(ctx context.Context, c client.Client, nodeName string, 
 	}
 }
 
-func (n *ReconcileNode) validateENI(ctx context.Context, option *eniOptions, eniTypes []eniTypeKey) bool {
+func (n *ReconcileNode) validateENI(ctx context.Context, node *networkv1beta1.Node, option *eniOptions, eniTypes []eniTypeKey) bool {
 	if !lo.Contains(eniTypes, option.eniTypeKey) {
 		return false
 	}
@@ -1333,6 +1333,12 @@ func (n *ReconcileNode) validateENI(ctx context.Context, option *eniOptions, eni
 		case aliyunClient.ENIStatusInUse, aliyunClient.ENIStatusAttaching:
 		default:
 			return false
+		}
+
+		// AvailableIPCount only represents the remaining IPv4 addresses in the
+		// vSwitch. It must not prevent IPv6-only allocation on an existing ENI.
+		if node.Spec.ENISpec != nil && !node.Spec.ENISpec.EnableIPv4 && node.Spec.ENISpec.EnableIPv6 {
+			return true
 		}
 
 		vsw, err := n.vswpool.GetByID(ctx, n.aliyun.GetVPC(), option.eniRef.VSwitchID)
@@ -1485,7 +1491,7 @@ func assignEniPrefixWithOptions(ctx context.Context, node *networkv1beta1.Node, 
 	// - IPv4 ENI always has a primary IP which occupies 1 slot
 	// - So the effective prefix capacity is IPv4PerAdapter - 1
 	prefixCapForNewENI := node.Spec.NodeCap.IPv4PerAdapter - 1
-	if prefixCapForNewENI <= 0 {
+	if eniSpec.EnableIPv4 && prefixCapForNewENI <= 0 {
 		l.Info("IPv4PerAdapter too small for prefix delegation, skipping new ENI creation",
 			"ipv4PerAdapter", node.Spec.NodeCap.IPv4PerAdapter)
 		return

@@ -167,6 +167,40 @@ var _ = Describe("Node Controller", func() {
 				Expect(resource.Labels["name"]).To(Equal(nodeName))
 				verifyNetworkCardsCount(ctx, nodeName, 2)
 			})
+
+			It("should calculate IPv6-only max-available-ip from IPv6PerAdapter", func() {
+				k8sNode := testutil.NewK8sNodeBuilder(nodeName).
+					WithInstanceType("ecs.g7.large").
+					Build()
+				Expect(k8sClient.Create(ctx, k8sNode)).To(Succeed())
+
+				node := &networkv1beta1.Node{
+					ObjectMeta: metav1.ObjectMeta{Name: nodeName},
+					Spec: networkv1beta1.NodeSpec{
+						NodeCap: networkv1beta1.NodeCap{
+							IPv4PerAdapter: 10,
+							IPv6PerAdapter: 7,
+						},
+						ENISpec: &networkv1beta1.ENISpec{
+							EnableIPv6: true,
+						},
+						Flavor: []networkv1beta1.Flavor{
+							{
+								NetworkInterfaceType:        networkv1beta1.ENITypeSecondary,
+								NetworkInterfaceTrafficMode: networkv1beta1.NetworkInterfaceTrafficModeStandard,
+								Count:                       2,
+							},
+						},
+					},
+				}
+
+				reconciler := createReconciler(true, false)
+				Expect(reconciler.k8sAnno(ctx, k8sNode, node)).To(Succeed())
+
+				updated := &corev1.Node{}
+				Expect(k8sClient.Get(ctx, types.NamespacedName{Name: nodeName}, updated)).To(Succeed())
+				Expect(updated.Annotations["k8s.aliyun.com/max-available-ip"]).To(Equal("14"))
+			})
 		})
 
 		Context("Exclusive ENI Mode", func() {

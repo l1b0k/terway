@@ -756,6 +756,60 @@ var _ = Describe("Node controller", func() {
 			Expect(node.Spec.ENISpec.VSwitchSelectPolicy).To(Equal(networkv1beta1.VSwitchSelectionPolicyRandom))
 		})
 
+		It("Rejects IPv6-only configuration on an instance without IPv6 capacity", func() {
+			ctx := context.Background()
+
+			k8sNode := &corev1.Node{
+				ObjectMeta: metav1.ObjectMeta{Name: nodeName},
+				Spec:       corev1.NodeSpec{ProviderID: "i-no-ipv6"},
+			}
+			Expect(k8sClient.Create(ctx, k8sNode)).To(Succeed())
+
+			cm := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: "eni-config", Namespace: "kube-system"},
+				Data: map[string]string{
+					"eni_conf": `{
+						"vswitches": {"cn-hangzhou-i":["vsw-no-ipv6"]},
+						"security_group": "sg-no-ipv6",
+						"ip_stack": "ipv6"
+					}`,
+				},
+			}
+			Expect(k8sClient.Create(ctx, cm)).To(Succeed())
+
+			node := &networkv1beta1.Node{
+				ObjectMeta: metav1.ObjectMeta{Name: nodeName},
+				Spec: networkv1beta1.NodeSpec{
+					NodeMetadata: networkv1beta1.NodeMetadata{
+						InstanceID:   "i-no-ipv6",
+						InstanceType: "ecs.no-ipv6",
+						RegionID:     "cn-hangzhou",
+						ZoneID:       "cn-hangzhou-i",
+					},
+					NodeCap: networkv1beta1.NodeCap{
+						Adapters:       3,
+						IPv4PerAdapter: 10,
+						IPv6PerAdapter: 0,
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, node)).To(Succeed())
+
+			controllerReconciler := &nodeReconcile{
+				client:   k8sClient,
+				nodeName: nodeName,
+				record:   events.NewFakeRecorder(100),
+			}
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{Name: nodeName},
+			})
+			Expect(err).To(MatchError("instance type does not support ipv6"))
+
+			updated := &networkv1beta1.Node{}
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: nodeName}, updated)).To(Succeed())
+			Expect(updated.Spec.ENISpec).To(BeNil())
+		})
+
 		It("New regular node with unsupported dual stack configuration", func() {
 			ctx := context.Background()
 

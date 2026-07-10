@@ -274,13 +274,17 @@ func (r *ReconcileNode) k8sAnno(ctx context.Context, k8sNode *corev1.Node, node 
 				secondaryIP = (node.Spec.NodeCap.IPv4PerAdapter - 1) * 16 * (node.Spec.NodeCap.TotalAdapters - 1)
 			}
 		} else {
+			ipPerAdapter := node.Spec.NodeCap.IPv4PerAdapter
+			if !node.Spec.ENISpec.EnableIPv4 && node.Spec.ENISpec.EnableIPv6 {
+				ipPerAdapter = node.Spec.NodeCap.IPv6PerAdapter
+			}
 			lo.ForEach(node.Spec.Flavor, func(item networkv1beta1.Flavor, index int) {
 				if item.NetworkInterfaceType == networkv1beta1.ENITypeSecondary &&
 					item.NetworkInterfaceTrafficMode == networkv1beta1.NetworkInterfaceTrafficModeStandard {
-					secondaryIP += item.Count * node.Spec.NodeCap.IPv4PerAdapter
+					secondaryIP += item.Count * ipPerAdapter
 				}
 				if item.NetworkInterfaceType == networkv1beta1.ENITypeTrunk {
-					secondaryIP += item.Count * node.Spec.NodeCap.IPv4PerAdapter
+					secondaryIP += item.Count * ipPerAdapter
 				}
 			})
 		}

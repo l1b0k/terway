@@ -831,7 +831,7 @@ func newNetworkService(ctx context.Context, configFilePath, daemonMode string) (
 	}
 }
 
-func checkInstance(limit *client.Limits, daemonMode string, config *daemon.Config) (bool, bool) {
+func checkInstance(limit *client.Limits, daemonMode string, config *daemon.Config) (bool, bool, error) {
 	var enableIPv4, enableIPv6 bool
 	switch config.IPStack {
 	case "ipv4":
@@ -845,6 +845,9 @@ func checkInstance(limit *client.Limits, daemonMode string, config *daemon.Confi
 
 	if enableIPv6 {
 		if !limit.SupportIPv6() {
+			if !enableIPv4 {
+				return false, false, fmt.Errorf("instance type does not support ipv6")
+			}
 			enableIPv6 = false
 			serviceLog.Info("instance is not support ipv6")
 		} else if daemonMode == daemon.ModeENIMultiIP && !limit.SupportMultiIPIPv6() && enableIPv4 {
@@ -870,7 +873,7 @@ func checkInstance(limit *client.Limits, daemonMode string, config *daemon.Confi
 			}
 		}
 	}
-	return enableIPv4, enableIPv6
+	return enableIPv4, enableIPv6, nil
 }
 
 // initTrunk to ensure trunk eni is present. Return eni id if found.

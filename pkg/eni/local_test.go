@@ -962,6 +962,131 @@ func TestFactoryAllocWorker_CreateENI_IPv6(t *testing.T) {
 	assert.Len(t, local.ipv6, 2)
 }
 
+func TestFactoryAllocWorker_CreateENI_IPv6Only(t *testing.T) {
+	f := factorymocks.NewFactory(t)
+	dummyENI := &daemon.ENI{
+		ID:  "eni-1",
+		MAC: "00:00:00:00:00:01",
+		PrimaryIP: types.IPSet{
+			IPv6: net.ParseIP("fd00::1"),
+		},
+	}
+	ipv6Set := []netip.Addr{netip.MustParseAddr("fd00::1"), netip.MustParseAddr("fd00::2")}
+	f.On("CreateNetworkInterface", 0, 2, "eniType").Return(dummyENI, nil, ipv6Set, nil).Once()
+
+	local := NewLocalTest(nil, f, &daemon.PoolConfig{
+		EnableIPv6: true,
+		BatchSize:  2,
+	}, "eniType")
+	local.status = statusInit
+
+	req1 := NewLocalIPRequest()
+	req2 := NewLocalIPRequest()
+	local.allocatingV6 = append(local.allocatingV6, req1, req2)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go local.factoryAllocWorker(ctx)
+
+	// Trigger worker
+	local.cond.Broadcast()
+
+	err := wait.ExponentialBackoff(wait.Backoff{
+		Duration: 100 * time.Millisecond,
+		Steps:    20,
+	}, func() (done bool, err error) {
+		local.cond.L.Lock()
+		defer local.cond.L.Unlock()
+
+		if local.eni != nil && local.status == statusInUse && len(local.ipv6) == 2 {
+			return true, nil
+		}
+		return false, nil
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, "eni-1", local.eni.ID)
+	assert.Equal(t, statusInUse, local.status)
+	assert.Len(t, local.ipv4, 0)
+	assert.Len(t, local.ipv6, 2)
+}
+
+func TestFactoryAllocWorker_CreateENI_DualStackNoPendingV6(t *testing.T) {
+	f := factorymocks.NewFactory(t)
+	dummyENI := &daemon.ENI{
+		ID:  "eni-1",
+		MAC: "00:00:00:00:00:01",
+		PrimaryIP: types.IPSet{
+			IPv4: net.ParseIP("192.0.2.1"),
+		},
+	}
+	ipv4Set := []netip.Addr{netip.MustParseAddr("192.0.2.1"), netip.MustParseAddr("192.0.2.2")}
+	// dual stack with no pending v6 request must not force an ipv6 allocation
+	f.On("CreateNetworkInterface", 2, 0, "eniType").Return(dummyENI, ipv4Set, nil, nil).Once()
+
+	local := NewLocalTest(nil, f, &daemon.PoolConfig{
+		EnableIPv4: true,
+		EnableIPv6: true,
+		BatchSize:  2,
+	}, "eniType")
+	local.status = statusInit
+
+	req1 := NewLocalIPRequest()
+	req2 := NewLocalIPRequest()
+	local.allocatingV4 = append(local.allocatingV4, req1, req2)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go local.factoryAllocWorker(ctx)
+
+	// Trigger worker
+	local.cond.Broadcast()
+
+	err := wait.ExponentialBackoff(wait.Backoff{
+		Duration: 100 * time.Millisecond,
+		Steps:    20,
+	}, func() (done bool, err error) {
+		local.cond.L.Lock()
+		defer local.cond.L.Unlock()
+
+		if local.eni != nil && local.status == statusInUse && len(local.ipv4) == 2 {
+			return true, nil
+		}
+		return false, nil
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, statusInUse, local.status)
+	assert.Len(t, local.ipv4, 2)
+	assert.Len(t, local.ipv6, 0)
+}
+
+func TestLocal_Load_IPv6Only(t *testing.T) {
+	f := factorymocks.NewFactory(t)
+	ipv6Set := []netip.Addr{netip.MustParseAddr("fd00::1"), netip.MustParseAddr("fd00::2")}
+	f.On("LoadNetworkInterface", "00:00:00:00:00:01").Return(nil, ipv6Set, nil).Once()
+
+	// ipv6-only eni has no primary ipv4, load must not fail parsing it
+	local := NewLocalTest(&daemon.ENI{
+		ID:  "eni-1",
+		MAC: "00:00:00:00:00:01",
+		PrimaryIP: types.IPSet{
+			IPv6: net.ParseIP("fd00::1"),
+		},
+	}, f, &daemon.PoolConfig{
+		EnableIPv6: true,
+		BatchSize:  2,
+	}, "eniType")
+
+	err := local.load(nil)
+	assert.NoError(t, err)
+	assert.Equal(t, statusInUse, local.status)
+	assert.Len(t, local.ipv4, 0)
+	assert.Len(t, local.ipv6, 2)
+}
+
 func TestFactoryAllocWorker_CreateENIFailed(t *testing.T) {
 	f := factorymocks.NewFactory(t)
 	called := make(chan struct{})

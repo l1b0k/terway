@@ -96,6 +96,9 @@ func (r *nodeReconcile) Reconcile(ctx context.Context, request reconcile.Request
 			ipv6 = false
 		}
 	case "ipv6":
+		if node.Spec.NodeCap.IPv6PerAdapter <= 0 {
+			return reconcile.Result{}, fmt.Errorf("instance type does not support ipv6")
+		}
 		ipv6 = true
 	default:
 		return reconcile.Result{}, fmt.Errorf("unsupported ip stack %s", eniConfig.IPStack)

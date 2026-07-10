@@ -102,6 +102,12 @@ func TestValidate_UnsupportedIPStack(t *testing.T) {
 	assert.Contains(t, err.Error(), "ipStack")
 }
 
+func TestValidate_IPv6Stack(t *testing.T) {
+	cfg := &Config{IPStack: string(types.IPStackIPv6)}
+	err := cfg.Validate()
+	assert.NoError(t, err)
+}
+
 func TestValidate_TooManySecurityGroups(t *testing.T) {
 	cfg := &Config{
 		IPStack:        string(types.IPStackIPv4),

@@ -219,9 +219,12 @@ func (l *Local) load(podResources []daemon.PodResources) error {
 
 	logf.Log.Info("load eni", "eni", l.eni.ID, "type", l.eniType, "mac", l.eni.MAC, "ipv4", ipv4, "ipv6", ipv6)
 
-	primary, err := netip.ParseAddr(l.eni.PrimaryIP.IPv4.String())
-	if err != nil {
-		return err
+	var primary netip.Addr
+	if l.enableIPv4 {
+		primary, err = netip.ParseAddr(l.eni.PrimaryIP.IPv4.String())
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, v := range ipv4 {
@@ -679,8 +682,18 @@ func (l *Local) factoryAllocWorker(ctx context.Context) {
 
 		if l.eni == nil {
 			// create eni
-			v4Count := min(l.batchSize, max(l.allocatingV4.Len(), 1))
-			v6Count := min(l.batchSize, l.allocatingV6.Len())
+			v4Count := 0
+			if l.enableIPv4 {
+				v4Count = min(l.batchSize, max(l.allocatingV4.Len(), 1))
+			}
+			v6Count := 0
+			if l.enableIPv6 {
+				v6Count = min(l.batchSize, l.allocatingV6.Len())
+				if !l.enableIPv4 {
+					// ipv6-only eni must carry at least one ipv6
+					v6Count = min(l.batchSize, max(l.allocatingV6.Len(), 1))
+				}
+			}
 
 			l.status = statusCreating
 			l.cond.L.Unlock()

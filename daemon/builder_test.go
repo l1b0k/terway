@@ -547,6 +547,7 @@ func TestNetworkServiceBuilder_initInstanceLimit(t *testing.T) {
 		instanceTypeErr  error
 		limitFromAPI     *client.Limits
 		limitFromAPIErr  error
+		checkInstanceErr error
 		expectedError    bool
 		expectedErrorMsg string
 	}{
@@ -571,6 +572,22 @@ func TestNetworkServiceBuilder_initInstanceLimit(t *testing.T) {
 			instanceType:     "ecs.g6.large",
 			instanceTypeErr:  nil,
 			expectedError:    false,
+		},
+		{
+			name:       "unsupported instance configuration",
+			nodeExists: true,
+			annotations: map[string]string{
+				"k8s.aliyun.com/eni-limit": "10",
+			},
+			limitFromAnno: &client.Limits{
+				InstanceTypeID: "ecs.g6.large",
+				Adapters:       3,
+				IPv4PerAdapter: 10,
+			},
+			instanceType:     "ecs.g6.large",
+			checkInstanceErr: errors.New("instance type does not support ipv6"),
+			expectedError:    true,
+			expectedErrorMsg: "instance type does not support ipv6",
 		},
 		{
 			name:             "get instance type error",
@@ -641,8 +658,8 @@ func TestNetworkServiceBuilder_initInstanceLimit(t *testing.T) {
 				return mockLimitProvider
 			})
 			instance.Init(mockMeta)
-			patches.ApplyFunc(checkInstance, func(limit *client.Limits, daemonMode string, config *daemon.Config) (bool, bool) {
-				return true, false
+			patches.ApplyFunc(checkInstance, func(limit *client.Limits, daemonMode string, config *daemon.Config) (bool, bool, error) {
+				return true, false, tc.checkInstanceErr
 			})
 
 			// Use a facade whose GetECS is patched to return mockECS so GetLimit(ecs, instanceType) receives non-nil
@@ -1104,12 +1121,13 @@ func TestNetworkServiceBuilder_setupENIManager_ErrorPaths(t *testing.T) {
 // Test checkInstance function
 func TestCheckInstance(t *testing.T) {
 	tests := []struct {
-		name         string
-		limit        *client.Limits
-		daemonMode   string
-		config       *daemon.Config
-		expectedIPv4 bool
-		expectedIPv6 bool
+		name          string
+		limit         *client.Limits
+		daemonMode    string
+		config        *daemon.Config
+		expectedIPv4  bool
+		expectedIPv6  bool
+		expectedError bool
 	}{
 		{
 			name: "ipv4 only stack",
@@ -1214,18 +1232,24 @@ func TestCheckInstance(t *testing.T) {
 				IPv4PerAdapter: 10,
 				IPv6PerAdapter: 0,
 			},
-			daemonMode:   daemon.ModeENIMultiIP,
-			config:       &daemon.Config{IPStack: "ipv6"},
-			expectedIPv4: false,
-			expectedIPv6: false,
+			daemonMode:    daemon.ModeENIMultiIP,
+			config:        &daemon.Config{IPStack: "ipv6"},
+			expectedIPv4:  false,
+			expectedIPv6:  false,
+			expectedError: true,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ipv4, ipv6 := checkInstance(tc.limit, tc.daemonMode, tc.config)
+			ipv4, ipv6, err := checkInstance(tc.limit, tc.daemonMode, tc.config)
 			assert.Equal(t, tc.expectedIPv4, ipv4)
 			assert.Equal(t, tc.expectedIPv6, ipv6)
+			if tc.expectedError {
+				assert.EqualError(t, err, "instance type does not support ipv6")
+			} else {
+				assert.NoError(t, err)
+			}
 			// Side effects on config
 			if tc.name == "trunk disabled when TrunkPod is 0" {
 				assert.False(t, tc.config.EnableENITrunking)

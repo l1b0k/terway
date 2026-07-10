@@ -222,8 +222,8 @@ func (b *NetworkServiceBuilder) initInstanceLimit() error {
 	}
 	b.limit = limit
 
-	b.service.enableIPv4, b.service.enableIPv6 = checkInstance(b.limit, b.daemonMode, b.config)
-	return nil
+	b.service.enableIPv4, b.service.enableIPv6, err = checkInstance(b.limit, b.daemonMode, b.config)
+	return err
 }
 
 func (b *NetworkServiceBuilder) setupENIManager() error {
@@ -336,9 +336,9 @@ func (b *NetworkServiceBuilder) setupENIManager() error {
 
 		switch b.daemonMode {
 		case daemon.ModeENIMultiIP:
-			nodeAnnotations[string(types.NormalIPTypeIPs)] = strconv.Itoa(poolConfig.Capacity - realRdmaCount*b.limit.IPv4PerAdapter)
-			nodeAnnotations[string(types.ERDMAIPTypeIPs)] = strconv.Itoa(realRdmaCount * b.limit.IPv4PerAdapter)
-			poolConfig.ERdmaCapacity = realRdmaCount * b.limit.IPv4PerAdapter
+			nodeAnnotations[string(types.NormalIPTypeIPs)] = strconv.Itoa(poolConfig.Capacity - realRdmaCount*poolConfig.MaxIPPerENI)
+			nodeAnnotations[string(types.ERDMAIPTypeIPs)] = strconv.Itoa(realRdmaCount * poolConfig.MaxIPPerENI)
+			poolConfig.ERdmaCapacity = realRdmaCount * poolConfig.MaxIPPerENI
 		case daemon.ModeENIOnly:
 			nodeAnnotations[string(types.NormalIPTypeIPs)] = strconv.Itoa(poolConfig.Capacity - realRdmaCount)
 			nodeAnnotations[string(types.ERDMAIPTypeIPs)] = strconv.Itoa(realRdmaCount)
