@@ -96,7 +96,7 @@ func Attach(ctx context.Context, c client.Client, option *AttachOption) error {
 	case v1beta1.ENIPhaseBind, v1beta1.ENIPhaseBinding:
 		return nil
 	case v1beta1.ENIPhaseDetaching, v1beta1.ENIPhaseDeleting:
-		return fmt.Errorf("eni cr phase %s ", networkInterface.Status.Phase)
+		return fmt.Errorf("networkinterface %s phase %s can not be attached; inspect with: kubectl describe networkinterface %s", option.NetworkInterfaceID, networkInterface.Status.Phase, option.NetworkInterfaceID)
 	}
 
 	// update to binding
@@ -200,7 +200,7 @@ func Detach(ctx context.Context, c client.Client, option *DetachOption) error {
 		return nil
 	case v1beta1.ENIPhaseInitial, v1beta1.ENIPhaseBind:
 	case v1beta1.ENIPhaseBinding, v1beta1.ENIPhaseDeleting:
-		return fmt.Errorf("eni cr phase %s ", networkInterface.Status.Phase)
+		return fmt.Errorf("networkinterface %s phase %s can not be detached; inspect with: kubectl describe networkinterface %s", option.NetworkInterfaceID, networkInterface.Status.Phase, option.NetworkInterfaceID)
 	}
 
 	networkInterface.Status.Phase = v1beta1.ENIPhaseDetaching
