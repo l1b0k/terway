@@ -145,7 +145,13 @@ func WaitStatus(ctx context.Context, c client.Client, option *DescribeOption) (*
 
 		if option.ExpectPhase != nil &&
 			*option.ExpectPhase != networkInterface.Status.Phase {
-			innerErr = fmt.Errorf("eni cr phase %s not match %s", networkInterface.Status.Phase, *option.ExpectPhase)
+			innerErr = fmt.Errorf(
+				"networkinterface %s phase %s did not reach expected phase %s; inspect with: kubectl describe networkinterface %s",
+				option.NetworkInterfaceID,
+				networkInterface.Status.Phase,
+				*option.ExpectPhase,
+				option.NetworkInterfaceID,
+			)
 			return false, nil
 		}
 		return true, nil

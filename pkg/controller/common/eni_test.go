@@ -430,7 +430,7 @@ var _ = Describe("Common ENI Operations", func() {
 				},
 			})
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("eni cr phase"))
+			Expect(err.Error()).To(Equal("networkinterface eni-mismatch phase Unbind did not reach expected phase Bind; inspect with: kubectl describe networkinterface eni-mismatch"))
 		})
 
 		It("should default BackOff.Steps to 1 when zero", func() {
