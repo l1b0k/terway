@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -268,6 +269,7 @@ func TestCleanRuntimeNode(t *testing.T) {
 			}
 
 			// Execute the function
+			mockK8s.On("GetRestConfig").Return(&rest.Config{QPS: 5}).Maybe()
 			err := ns.cleanRuntimeNode(context.Background(), tt.localUIDs)
 
 			// Assertions
