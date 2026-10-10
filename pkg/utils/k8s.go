@@ -88,7 +88,10 @@ func RuntimeFinalStatus(status map[v1beta1.CNIStatus]*v1beta1.CNIStatusInfo) (cn
 			ok = true
 		} else {
 			// statusInfo.LastUpdateTime
-			if cniStatusInfo.LastUpdateTime.Before(&statusInfo.LastUpdateTime) {
+			// metav1.Time is serialized with second precision. Prefer the
+			// terminal state when both events were recorded in the same second.
+			if cniStatusInfo.LastUpdateTime.Before(&statusInfo.LastUpdateTime) ||
+				(cniStatusInfo.LastUpdateTime.Equal(&statusInfo.LastUpdateTime) && cni == v1beta1.CNIStatusDeleted) {
 				cniStatusInfo = statusInfo
 				cniStatus = cni
 				ok = true

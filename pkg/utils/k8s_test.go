@@ -70,6 +70,16 @@ func TestFinalStatus(t *testing.T) {
 			expectedOk:     true,
 		},
 		{
+			name: "Equal timestamps prefer Deleted",
+			status: map[v1beta1.CNIStatus]*v1beta1.CNIStatusInfo{
+				v1beta1.CNIStatusInitial: {LastUpdateTime: now},
+				v1beta1.CNIStatusDeleted: {LastUpdateTime: now},
+			},
+			expectedStatus: v1beta1.CNIStatusDeleted,
+			expectedInfo:   &v1beta1.CNIStatusInfo{LastUpdateTime: now},
+			expectedOk:     true,
+		},
+		{
 			name: "Nil status info",
 			status: map[v1beta1.CNIStatus]*v1beta1.CNIStatusInfo{
 				v1beta1.CNIStatusInitial: nil,
